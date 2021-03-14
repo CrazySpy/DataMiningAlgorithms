@@ -15,7 +15,7 @@ JoinLess::JoinLess(std::vector<InstanceType> &instances, double minPre, double m
         auto id = std::get<Id>(instance);
 
         _instances[feature][id] = instance;
-        _cliqueInstances[1][{feature}].insert({std::make_pair(feature, id)});
+        _cliqueInstances[1][{feature}].push_back({std::make_pair(feature, id)});
     }
 
     // Generate P_1
@@ -144,11 +144,14 @@ void JoinLess::_generateStarCenterSubsetInstancesRecursive(
 
     if(p + remainder > starNeighborhoods.size()) return;
 
-    _generateStarCenterSubsetInstancesRecursive(instances, starNeighborhoods, k, p + 1, remainder, tmp_instance, tmp_colocation);
+    if(starNeighborhoods[p].first != tmp_colocation[k - remainder - 1]) {
+        tmp_instance[k - remainder] = starNeighborhoods[p];
+        tmp_colocation[k - remainder] = starNeighborhoods[p].first;
+        _generateStarCenterSubsetInstancesRecursive(instances, starNeighborhoods, k, p + 1, remainder - 1, tmp_instance,
+                                                    tmp_colocation);
+    }
 
-    tmp_instance[k - remainder] = starNeighborhoods[p];
-    tmp_colocation[k - remainder] = starNeighborhoods[p].first;
-    _generateStarCenterSubsetInstancesRecursive(instances, starNeighborhoods, k, p + 1, remainder - 1, tmp_instance, tmp_colocation);
+    _generateStarCenterSubsetInstancesRecursive(instances, starNeighborhoods, k, p + 1, remainder, tmp_instance, tmp_colocation);
 }
 
 std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>>
@@ -266,7 +269,7 @@ void JoinLess::_filterCliqueInstances(
         // step 9
         if(k == 2) {
             for(auto &rowInstance : instances) {
-                _cliqueInstances[2][candidate].insert(rowInstance);
+                _cliqueInstances[2][candidate].push_back(rowInstance);
             }
             continue;
         }
@@ -276,8 +279,9 @@ void JoinLess::_filterCliqueInstances(
             std::vector<std::pair<FeatureType, InstanceIdType>> starEdges(rowInstance.begin() + 1, rowInstance.end());
 
             // If starEdges is a clique, then candidate is a clique.
-            if(_cliqueInstances[k - 1].count(starEdgeFeature) && _cliqueInstances[k - 1][starEdgeFeature].count(starEdges)) {
-                _cliqueInstances[k][candidate].insert(rowInstance);
+            if(_cliqueInstances[k - 1].count(starEdgeFeature) &&
+               std::binary_search(_cliqueInstances[k - 1][starEdgeFeature].begin(), _cliqueInstances[k - 1][starEdgeFeature].end(), starEdges)) {
+                _cliqueInstances[k][candidate].push_back(rowInstance);
             }
         }
     }
@@ -310,23 +314,23 @@ void JoinLess::_selectPrevalentColocations(int k) {
     }
 }
 
-void JoinLess::_generateRuleConsequents(
+void JoinLess::_generateRuleConsequences(
     const ColocationType &colocation,
     int pos,
-    ColocationSetType &consequents,
+    ColocationSetType &consequences,
     ColocationType &tmp) {
     if (pos == colocation.size())
     {
         if (!tmp.empty() && tmp.size() != colocation.size()) {
-            consequents.push_back(tmp);
+            consequences.push_back(tmp);
         }
         return;
     }
 
-    _generateRuleConsequents(colocation, pos + 1, consequents, tmp);
+    _generateRuleConsequences(colocation, pos + 1, consequences, tmp);
     tmp.push_back(colocation[pos]);
     if (!tmp.empty() || std::binary_search(_prevalent[tmp.size()].begin(), _prevalent[tmp.size()].end(), tmp)) {
-        _generateRuleConsequents(colocation, pos + 1, consequents, tmp);
+        _generateRuleConsequences(colocation, pos + 1, consequences, tmp);
     }
     tmp.pop_back();    // trackback
 }
@@ -335,13 +339,13 @@ void JoinLess::_generateRules(unsigned int k) {
     auto &prevalentColocations = _prevalent[k];
 
     for (auto &colocation : prevalentColocations) {
-        ColocationSetType consequents;
+        ColocationSetType consequences;
         ColocationType tmp;
-        _generateRuleConsequents(colocation, 0, consequents, tmp);
+        _generateRuleConsequences(colocation, 0, consequences, tmp);
 
-        for (auto& consequent : consequents) {
+        for (auto& consequence : consequences) {
             ColocationType antecedent;
-            std::set_difference(colocation.begin(), colocation.end(), consequent.begin(), consequent.end(), std::back_inserter(antecedent));
+            std::set_difference(colocation.begin(), colocation.end(), consequence.begin(), consequence.end(), std::back_inserter(antecedent));
 
             if (!std::binary_search(_prevalent[antecedent.size()].begin(), _prevalent[antecedent.size()].end(), antecedent)) continue;
 
@@ -372,7 +376,7 @@ void JoinLess::_generateRules(unsigned int k) {
 
             unsigned int antecedentTableInstanceSize = _cliqueInstances[antecedent.size()][antecedent].size();
             if (differentInstances.size() * 1.0 / antecedentTableInstanceSize >= _minRuleProbability) {
-                _rules.insert({ antecedent, consequent });
+                _rules.insert({ antecedent, consequence });
             }
         }
     }

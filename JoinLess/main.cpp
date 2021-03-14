@@ -23,7 +23,7 @@ bool hasRelation(const InstanceType &instance1, const InstanceType &instance2) {
 int main(int argc, char **argv) {
     if(argc != 5) {
         cout << "Argument number must be 4" << endl;
-        cout << "./JoinLess minimum_prevalence minimum_rule_probability maximum_neighbourhood_distance inputPath" << endl;
+        cout << argv[0] << " minimum_prevalence minimum_rule_probability maximum_neighbourhood_distance inputPath" << endl;
         return 0;
     }
     double minPre = stod(argv[1]), minRuleProbability = stod(argv[2]);
