@@ -21,7 +21,7 @@ JoinLess::JoinLess(std::vector<InstanceType> &instances, double minPre, double m
     // Generate P_1
     auto &prevalence = _prevalent[1];
     for(auto &instancePair : _instances) {
-        prevalence.insert({instancePair.first});
+        prevalence.push_back({instancePair.first});
     }
 
     _generateRelations(instances);
@@ -38,7 +38,7 @@ void JoinLess::_generateRelations(std::vector<InstanceType> &instances) {
             InstanceIdType id2 = std::get<Id>(instance2);
             if(hasRelation(instance1, instance2)) {
                 // feature.id1 should less than feature2.id2.
-                _relations.insert({{feature1, id1}, {feature2, id2}});
+                _relations.push_back({{feature1, id1}, {feature2, id2}});
             }
         }
     }
@@ -99,8 +99,7 @@ ColocationSetType JoinLess::_generateCandidateColocations(int k) {
     for (auto it1 = prevalent.begin(); it1 != prevalent.end(); ++it1) {
         auto &colocation1 = (*it1);
 
-        auto it2 = it1; it2++;
-        while(it2 !=prevalent.end()) {
+        for(auto it2 = it1 + 1; it2 !=prevalent.end(); ++it2) {
             auto &colocation2 = (*it2);
 
             bool canMerge = true;
@@ -123,7 +122,6 @@ ColocationSetType JoinLess::_generateCandidateColocations(int k) {
                     candidates.push_back(candidate);
                 }
             }
-            ++it2;
         }
     }
 
@@ -307,7 +305,7 @@ void JoinLess::_selectPrevalentColocations(int k) {
 
         double participationIndex = _calculateParticipationIndex(bitmap);
         if(participationIndex >= _minPre) {
-            _prevalent[k].insert(candidate);
+            _prevalent[k].push_back(candidate);
         }
     }
 }
@@ -327,7 +325,7 @@ void JoinLess::_generateRuleConsequents(
 
     _generateRuleConsequents(colocation, pos + 1, consequents, tmp);
     tmp.push_back(colocation[pos]);
-    if (!tmp.empty() || _prevalent[tmp.size()].count(tmp)) {
+    if (!tmp.empty() || std::binary_search(_prevalent[tmp.size()].begin(), _prevalent[tmp.size()].end(), tmp)) {
         _generateRuleConsequents(colocation, pos + 1, consequents, tmp);
     }
     tmp.pop_back();    // trackback
@@ -345,7 +343,7 @@ void JoinLess::_generateRules(unsigned int k) {
             ColocationType antecedent;
             std::set_difference(colocation.begin(), colocation.end(), consequent.begin(), consequent.end(), std::back_inserter(antecedent));
 
-            if (!_prevalent[antecedent.size()].count(antecedent)) continue;
+            if (!std::binary_search(_prevalent[antecedent.size()].begin(), _prevalent[antecedent.size()].end(), antecedent)) continue;
 
             // Check the confidence of the candidate rule.
 

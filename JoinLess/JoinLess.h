@@ -16,9 +16,9 @@ private:
     double _minRuleProbability;
 
     std::map<FeatureType, std::map<InstanceIdType, InstanceType>> _instances;
-    std::map<unsigned int, std::set<ColocationType>> _prevalent;
+    std::map<unsigned int, std::vector<ColocationType>> _prevalent;
 
-    std::set<std::pair<std::pair<FeatureType, InstanceIdType>, std::pair<FeatureType, InstanceIdType>>> _relations;
+    std::vector<std::pair<std::pair<FeatureType, InstanceIdType>, std::pair<FeatureType, InstanceIdType>>> _relations;
     std::map<FeatureType, std::map<InstanceIdType, std::vector<std::pair<FeatureType, InstanceIdType>>>> _starNeighborhoods;
 
     std::map<unsigned int, std::map<ColocationType, std::set<std::vector<std::pair<FeatureType, InstanceIdType>>>>> _cliqueInstances;
