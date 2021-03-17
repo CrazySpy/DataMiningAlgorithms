@@ -15,7 +15,7 @@ double maxDistance;
 double cellResolution;
 
 bool multi_rel(CellPositionType &p1, CellPositionType &p2) {
-    return abs(p1.first - p2.first) <= 1 && abs(p1.second - p2.second) <= cellResolution * cellResolution;
+    return abs(p1.first - p2.first) <= 1 && abs(p1.second - p2.second) <= 1;
 }
 
 bool isRReachable(LocationType &loc1, LocationType &loc2) {
