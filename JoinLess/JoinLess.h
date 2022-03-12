@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <memory>
+#include <unordered_set>
 
 class JoinLess {
 private:
@@ -61,7 +62,7 @@ private:
     std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>>
     _filterStarInstances(const ColocationSetType &candidates, int k);
 
-    double _calculateParticipationIndex(std::map<FeatureType, std::vector<bool>> &bitmap);
+    double _calculateParticipationIndex(std::map<FeatureType, std::unordered_set<InstanceIdType>> &bitmap);
 
     // Prune candidates whose prevalence lower than min_pre according to their instances.
     // Current candidates' instances may not be a clique. So call the function 'coarse'.

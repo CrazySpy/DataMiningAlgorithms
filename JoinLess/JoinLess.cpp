@@ -4,6 +4,7 @@
 
 #include "JoinLess.h"
 #include <algorithm>
+#include <unordered_set>
 
 extern bool hasRelation(const InstanceType &, const InstanceType &);
 
@@ -210,18 +211,10 @@ std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, Instance
     return starInstances;
 }
 
-double JoinLess::_calculateParticipationIndex(std::map<FeatureType, std::vector<bool>> &bitmap) {
+double JoinLess::_calculateParticipationIndex(std::map<FeatureType, std::unordered_set<InstanceIdType>> &bitmap) {
     double participationIndex = 1;
-    for(auto it = bitmap.begin(); it != bitmap.end(); ++it) {
-        int cnt = 0;
-        auto &featureBits = (*it).second;
-        for(auto bit : featureBits) {
-            if(bit) {
-                ++cnt;
-            }
-        }
-
-        participationIndex = std::min(cnt * 1.0 / featureBits.size(), participationIndex);
+    for(auto &[feature, idSet] : bitmap) {
+        participationIndex = std::min(idSet.size() * 1.0 / _instances[feature].size(), participationIndex);
     }
     return participationIndex;
 }
@@ -237,16 +230,11 @@ void JoinLess::_selectCoarsePrevalentColocations(
         auto &candidate = (*it).first;
         auto &instances = (*it).second;
 
-        std::map<FeatureType , std::vector<bool>> bitmap;
-
-        // Initialize bitmap
-        for(auto &feature : (*it).first) {
-            bitmap[feature] = std::vector<bool>(_instances[feature].size(), false);
-        }
+        std::map<FeatureType, std::unordered_set<InstanceIdType>> bitmap;
 
         for(auto &rowInstance : instances) {
             for(auto &instance : rowInstance) {
-                bitmap[instance.first][instance.second - 1] = true;
+                bitmap[instance.first].insert(instance.second);
             }
         }
 
@@ -293,17 +281,14 @@ void JoinLess::_selectPrevalentColocations(int k) {
         auto &candidate = candidateCliqueMap.first;
         auto &cliques = candidateCliqueMap.second;
 
-        std::map<FeatureType , std::vector<bool>> bitmap;
-        for(auto &feature : candidate) {
-            bitmap[feature] = std::vector<bool>(_instances[feature].size(), false);
-        }
+        std::map<FeatureType , std::unordered_set<InstanceIdType>> bitmap;
 
         for(auto &rowInstance : cliques) {
             for(auto &instance : rowInstance) {
                 auto &feature = instance.first;
                 auto &id = instance.second;
 
-                bitmap[feature][id - 1] = true;
+                bitmap[feature].insert(id);
             }
         }
 
