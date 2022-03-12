@@ -1,0 +1,12 @@
+[submodule "JoinLess/CSVReader"]
+	path = JoinLess/CSVReader
+	url = https://github.com/CrazySpy/CSVReader.git
+[submodule "CPITree/CSVReader"]
+	path = CPITree/CSVReader
+	url = https://github.com/CrazySpy/CSVReader.git
+[submodule "JoinBase/CSVReader"]
+	path = JoinBase/CSVReader
+	url = https://github.com/CrazySpy/CSVReader.git
+[submodule "JoinLess-FractionScore/CSVReader"]
+	path = JoinLess-FractionScore/CSVReader
+	url = https://github.com/CrazySpy/CSVReader.git

@@ -1,10 +1,9 @@
 #include <iostream>
 #include "JoinLess.h"
-#include <cmath>
-#include <fstream>
-#include <sstream>
 #include <tuple>
 #include <chrono>
+
+#include "CSVReader/CSVReader.h"
 
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
@@ -21,23 +20,16 @@ int main(int argc, char **argv) {
     double maxDistance = stod(argv[3]);
     string inputPath(argv[4]);
 
-    ifstream ifs(inputPath, ios::in);
+    CSVReader csvReader(inputPath);
 
     std::vector<InstanceType> instances;
 
-    std::string line;
-    while(getline(ifs, line)) {
-        for(int i = 0; i < line.size(); ++i) {
-            if(line[i] == ',') {
-                line[i] = ' ';
-            }
-        }
+    while(csvReader.hasNext()) {
+        auto line = csvReader.getNextRecord();
 
-        stringstream ss(line);
-        unsigned char feature;
-        unsigned int id;
-        double x, y;
-        ss >> feature >> id >> x >> y;
+        unsigned char feature = line[0][0];
+        unsigned int id = stoul(line[1]);
+        double x = stod(line[2]), y = stod(line[3]);
 
         instances.emplace_back(make_tuple(id, feature, make_pair(x, y)));
     }
