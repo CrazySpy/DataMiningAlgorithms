@@ -14,14 +14,14 @@
 using InstanceIdType = unsigned int;
 using FeatureType = unsigned char;
 using LocationType = std::pair<double, double>;
-using InstanceType = std::tuple<InstanceIdType, FeatureType, LocationType>;
+using InstanceType = std::tuple<FeatureType, InstanceIdType, LocationType>;
 
 using RowInstanceType = std::vector<InstanceIdType>;
 using TableInstanceType = std::vector<RowInstanceType>;
 
 enum InstanceEnum {
-    Id,
     Feature,
+    Id,
     Location
 };
 
