@@ -13,7 +13,7 @@
 
 class JoinLess {
 private:
-    double _minPre;
+    double _minPI;
     double _minRuleProbability;
 
     std::map<FeatureType, std::map<InstanceIdType, InstanceType>> _instances;
@@ -27,7 +27,7 @@ private:
     std::set<std::pair<ColocationType, ColocationType>> _rules;
 
 public:
-    JoinLess(std::vector<InstanceType> &instances, double minPre, double minRuleProbability);
+    JoinLess(std::vector<InstanceType> &instances, double minPI, double minRuleProbability);
 
     std::set<RuleType> execute();
 
@@ -49,15 +49,16 @@ private:
     bool _isSubsetPrevalentRecursive(ColocationType &candidate, unsigned int pos, unsigned int remainder,
                                      std::vector<FeatureType> &tmp);
 
-    void _generateStarCenterSubsetInstancesRecursive(
-            std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>> &instances,
-            const std::vector<std::pair<FeatureType, InstanceIdType>> &starNeighborhoods, int k, int p, int remainder,
-            std::vector<std::pair<FeatureType, InstanceIdType>> &tmp_instance, ColocationType &tmp_colocation);
+    void _selectStarInstancesRecursive(int curFeatureId, const int k, int curStarNeighborhoodId,
+                                       const ColocationType &candidate,
+                                       const std::vector<std::pair<FeatureType, InstanceIdType>> &starNeighborhoods,
+                                       std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>> &starInstances,
+                                       std::vector<std::pair<FeatureType, InstanceIdType>> &tmpInstance);
 
     // Generate star instances according to starNeighborhoods vector which is a star neighborhoods' set of an instance.
-    std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>>
-    _generateStarCenterSubsetInstances(const std::vector<std::pair<FeatureType, InstanceIdType>> &starNeighborhoods,
-                                        int k);
+    std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>> _selectStarInstances(
+            const std::vector<std::pair<FeatureType, InstanceIdType>> &starNeighborhoods,
+            const ColocationType &candidate);
 
     std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>>
     _filterStarInstances(const ColocationSetType &candidates, int k);
@@ -70,7 +71,7 @@ private:
 
     // Filter clique instances to _cliqueInstances.
     void _filterCliqueInstances(
-            const std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>> &colocationInstancesMap,
+            std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>> &colocationInstancesMap,
             int k);
 
     void _selectPrevalentColocations(int k);

@@ -3,4 +3,4 @@ project(JoinLess)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(JoinLess main.cpp JoinLess.cpp JoinLess.h)
+add_executable(JoinLess main.cpp JoinLess.cpp JoinLess.h CSVReader/CSVReader.h CSVReader/CSVReader.cpp)

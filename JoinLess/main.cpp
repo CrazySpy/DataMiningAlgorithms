@@ -1,10 +1,11 @@
 #include <iostream>
 #include "JoinLess.h"
 #include <cmath>
-#include <fstream>
-#include <sstream>
 #include <tuple>
 #include <chrono>
+#include <string>
+
+#include "CSVReader/CSVReader.h"
 
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
@@ -26,35 +27,28 @@ int main(int argc, char **argv) {
         cout << argv[0] << " minimum_prevalence minimum_rule_probability maximum_neighbourhood_distance inputPath" << endl;
         return 0;
     }
-    double minPre = stod(argv[1]), minRuleProbability = stod(argv[2]);
+    double minPI = stod(argv[1]), minRuleProbability = stod(argv[2]);
     maxDistance = stod(argv[3]);
     string inputPath(argv[4]);
 
-    ifstream ifs(inputPath, ios::in);
+    CSVReader csvReader(inputPath);
 
     std::vector<InstanceType> instances;
 
-    std::string line;
-    while(getline(ifs, line)) {
-        for(int i = 0; i < line.size(); ++i) {
-            if(line[i] == ',') {
-                line[i] = ' ';
-            }
-        }
+    while(csvReader.hasNext()) {
+        auto line = csvReader.getNextRecord();
 
-        stringstream ss(line);
-        unsigned char feature;
-        unsigned int id;
-        double x, y;
-        ss >> feature >> id >> x >> y;
+        FeatureType feature = line[0];
+        InstanceIdType id = stoul(line[1]);
+        double x = stod(line[2]), y = stod(line[3]);
 
-        instances.emplace_back(make_tuple(id, feature, make_pair(x, y)));
+        instances.emplace_back(make_tuple(feature, id, make_pair(x, y)));
     }
     cout << instances.size() << endl;
 
     high_resolution_clock::time_point beginTime = high_resolution_clock::now();
 
-    JoinLess joinLess(instances, minPre, minRuleProbability);
+    JoinLess joinLess(instances, minPI, minRuleProbability);
     set<RuleType> rules = joinLess.execute();
 
     high_resolution_clock::time_point endTime = high_resolution_clock::now();

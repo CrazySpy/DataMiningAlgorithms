@@ -8,8 +8,8 @@
 
 extern bool hasRelation(const InstanceType &, const InstanceType &);
 
-JoinLess::JoinLess(std::vector<InstanceType> &instances, double minPre, double minRuleProbability)
-    : _minPre(minPre),
+JoinLess::JoinLess(std::vector<InstanceType> &instances, double minPI, double minRuleProbability)
+    : _minPI(minPI),
       _minRuleProbability(minRuleProbability) {
     for(auto &instance : instances) {
         auto feature = std::get<Feature>(instance);
@@ -129,83 +129,58 @@ ColocationSetType JoinLess::_generateCandidateColocations(int k) {
     return candidates;
 }
 
-void JoinLess::_generateStarCenterSubsetInstancesRecursive(
-        std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>> &instances,
-        const std::vector<std::pair<FeatureType, InstanceIdType>> &starNeighborhoods,
-        int k,
-        int p,
-        int remainder,
-        std::vector<std::pair<FeatureType, InstanceIdType>> &tmp_instance,
-        ColocationType &tmp_colocation) {
-
-    if(!remainder) {
-        instances[tmp_colocation].push_back(tmp_instance);
+void JoinLess::_selectStarInstancesRecursive(int curFeatureId, const int k, int curStarNeighborhoodId,
+                                             const ColocationType &candidate,
+                                             const std::vector<std::pair<FeatureType, InstanceIdType>> &starNeighborhoods,
+                                             std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>> &starInstances,
+                                             std::vector<std::pair<FeatureType, InstanceIdType>> &tmpInstance) {
+    if(curFeatureId == k) {
+        starInstances.push_back(tmpInstance);
         return;
     }
 
-    if(p + remainder > starNeighborhoods.size()) return;
+    const FeatureType curFeature = candidate[curFeatureId];
+    for(int i = curStarNeighborhoodId; i < starNeighborhoods.size(); ++i) {
+        if(starNeighborhoods[i].first > curFeature) break;
+        if(starNeighborhoods[i].first < curFeature) continue;
 
-    if(starNeighborhoods[p].first != tmp_colocation[k - remainder - 1]) {
-        tmp_instance[k - remainder] = starNeighborhoods[p];
-        tmp_colocation[k - remainder] = starNeighborhoods[p].first;
-        _generateStarCenterSubsetInstancesRecursive(instances, starNeighborhoods, k, p + 1, remainder - 1, tmp_instance,
-                                                    tmp_colocation);
+        tmpInstance[curFeatureId] = starNeighborhoods[i];
+        _selectStarInstancesRecursive(curFeatureId + 1, k, i + 1, candidate, starNeighborhoods, starInstances, tmpInstance);
     }
+}
 
-    _generateStarCenterSubsetInstancesRecursive(instances, starNeighborhoods, k, p + 1, remainder, tmp_instance, tmp_colocation);
+std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>
+JoinLess::_selectStarInstances(const std::vector<std::pair<FeatureType, InstanceIdType>> &starNeighborhoods,
+                               const ColocationType &candidate) {
+    int k = candidate.size();
+
+    std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>> starInstances;
+    std::vector<std::pair<FeatureType, InstanceIdType>> tmpInstance(k);
+
+    tmpInstance[0] = starNeighborhoods[0];
+
+    _selectStarInstancesRecursive(1, k, 0, candidate, starNeighborhoods, starInstances, tmpInstance);
+
+    return starInstances;
 }
 
 std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>>
-        JoinLess::_generateStarCenterSubsetInstances(
-                const std::vector<std::pair<FeatureType, InstanceIdType>> &starNeighborhoods,
-                int k) {
-    // Collect the star instances of colocations.
-    std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>> instances;
-
-    std::vector<std::pair<FeatureType, InstanceIdType>> tmp_instance(k);
-    ColocationType tmp_colocation(k);
-
-    tmp_instance[0] = starNeighborhoods[0];
-    tmp_colocation[0] = starNeighborhoods[0].first;
-
-    _generateStarCenterSubsetInstancesRecursive(instances, starNeighborhoods, k, 1, k - 1, tmp_instance, tmp_colocation);
-
-    return instances;
-}
-
-std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>>
-        JoinLess::_filterStarInstances(const ColocationSetType &candidates, int k) {
+JoinLess::_filterStarInstances(const ColocationSetType &candidates, int k) {
     std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>> starInstances;
 
-    // Collect all features which will be searched as star centers in star neighborhoods.
-    std::set<FeatureType> firstFeatures;
     for(auto &candidate : candidates) {
-        firstFeatures.insert(candidate[0]);
-    }
+        auto startCenterFeature = candidate[0];
 
-    for(auto &starCenterFeature : firstFeatures) {
-        auto &idStarNeighborhood = _starNeighborhoods[starCenterFeature];
-        for(auto &idStarNeighborhoodPair : idStarNeighborhood) {
-            auto &starCenterId = idStarNeighborhoodPair.first;
-            auto &starNeighborhoods = idStarNeighborhoodPair.second;
-
+        std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>> candidateStarInstances;
+        for(auto &[startCenterId, starNeighborhoods] : _starNeighborhoods[startCenterFeature]) {
             if(starNeighborhoods.size() < k) continue;
 
-            // Elements in colocationInstancesMap of different iteration rounds must be distinct.
-            auto colocationInstancesMap = _generateStarCenterSubsetInstances(starNeighborhoods, k);
-            // Merge the old instances with the new instances generated above.
-            for(auto &candidate : candidates) {
-                if(candidate[0] > starCenterFeature) break; // Because candidates are sorted by feature.
-                if(candidate[0] < starCenterFeature) continue;
-                if(!colocationInstancesMap.count(candidate)) continue;
+            auto starInstances = _selectStarInstances(starNeighborhoods, candidate);
 
-                auto &newInstances = colocationInstancesMap[candidate];
-                auto &instances = starInstances[candidate];
-                for(auto &newInstance : newInstances) {
-                    instances.push_back(std::move(newInstance));
-                }
-            }
+            candidateStarInstances.insert(candidateStarInstances.end(), starInstances.begin(), starInstances.end());
         }
+
+        starInstances[candidate] = std::move(candidateStarInstances);
     }
 
     return starInstances;
@@ -239,7 +214,7 @@ void JoinLess::_selectCoarsePrevalentColocations(
         }
 
         double participationIndex = _calculateParticipationIndex(bitmap);
-        if(participationIndex < _minPre) {
+        if(participationIndex < _minPI) {
             it = colocationInstancesMap.erase(it);
         } else {
             ++it;
@@ -248,9 +223,10 @@ void JoinLess::_selectCoarsePrevalentColocations(
 }
 
 void JoinLess::_filterCliqueInstances(
-        const std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>> &colocationInstancesMap,
+        std::map<ColocationType, std::vector<std::vector<std::pair<FeatureType, InstanceIdType>>>> &colocationInstancesMap,
         int k) {
-    for(auto it = colocationInstancesMap.begin(); it != colocationInstancesMap.end(); ++it) {
+    auto it = colocationInstancesMap.begin();
+    while(it != colocationInstancesMap.end()) {
         const auto &candidate = (*it).first;
         const auto &instances = (*it).second;
 
@@ -259,19 +235,21 @@ void JoinLess::_filterCliqueInstances(
             for(auto &rowInstance : instances) {
                 _cliqueInstances[2][candidate].push_back(rowInstance);
             }
-            continue;
         }
+        else {
+            ColocationType starEdgeFeature(candidate.begin() + 1, candidate.end());
+            for (auto& rowInstance : instances) {
+                std::vector<std::pair<FeatureType, InstanceIdType>> starEdges(rowInstance.begin() + 1, rowInstance.end());
 
-        ColocationType starEdgeFeature(candidate.begin() + 1, candidate.end());
-        for(auto &rowInstance : instances) {
-            std::vector<std::pair<FeatureType, InstanceIdType>> starEdges(rowInstance.begin() + 1, rowInstance.end());
-
-            // If starEdges is a clique, then candidate is a clique.
-            if(_cliqueInstances[k - 1].count(starEdgeFeature) &&
-               std::binary_search(_cliqueInstances[k - 1][starEdgeFeature].begin(), _cliqueInstances[k - 1][starEdgeFeature].end(), starEdges)) {
-                _cliqueInstances[k][candidate].push_back(rowInstance);
+                // If starEdges is a clique, then candidate is a clique.
+                if (_cliqueInstances[k - 1].count(starEdgeFeature) &&
+                    std::binary_search(_cliqueInstances[k - 1][starEdgeFeature].begin(), _cliqueInstances[k - 1][starEdgeFeature].end(), starEdges)) {
+                    _cliqueInstances[k][candidate].push_back(rowInstance);
+                }
             }
         }
+
+        it = colocationInstancesMap.erase(it);
     }
 }
 
@@ -293,7 +271,7 @@ void JoinLess::_selectPrevalentColocations(int k) {
         }
 
         double participationIndex = _calculateParticipationIndex(bitmap);
-        if(participationIndex >= _minPre) {
+        if(participationIndex >= _minPI) {
             _prevalent[k].push_back(candidate);
         }
     }

@@ -12,7 +12,7 @@
 #include <memory>
 
 using InstanceIdType = unsigned int;
-using FeatureType = unsigned char;
+using FeatureType = std::string;
 using LocationType = std::pair<double, double>;
 using InstanceType = std::tuple<FeatureType, InstanceIdType, LocationType>;
 
