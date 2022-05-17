@@ -13,7 +13,7 @@
 
 class JoinBase {
 private:
-    double _minPre;
+    double _minPI;
     double _minRuleProbability;
 
     bool _fmul;
@@ -27,7 +27,7 @@ private:
 
 public:
     JoinBase(std::vector<InstanceType> &instances,
-             double minPre,
+             double minPI,
              double minRuleProbability,
              bool fmul = true,
              double cellSize= 1);

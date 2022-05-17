@@ -3,4 +3,4 @@ project(JoinBase)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(JoinBase main.cpp Types.h Types.cpp JoinBase.cpp JoinBase.h MultiResolution.cpp MultiResolution.h)
+add_executable(JoinBase main.cpp Types.h Types.cpp JoinBase.cpp JoinBase.h MultiResolution.cpp MultiResolution.h CSVReader/CSVReader.h CSVReader/CSVReader.cpp)

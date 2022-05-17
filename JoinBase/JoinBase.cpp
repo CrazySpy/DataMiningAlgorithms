@@ -8,11 +8,11 @@
 
 extern bool isRReachable(LocationType &loc1, LocationType &loc2);
 
-JoinBase::JoinBase(std::vector<InstanceType> &instances, double minPre, double minRuleProbability, bool fmul, double cellSize)
-        : _minPre(minPre),
+JoinBase::JoinBase(std::vector<InstanceType> &instances, double minPI, double minRuleProbability, bool fmul, double cellSize)
+        : _minPI(minPI),
           _minRuleProbability(minRuleProbability),
           _fmul(fmul),
-          _multiResolution(instances, minPre, cellSize) {
+          _multiResolution(instances, minPI, cellSize) {
     for(auto it = instances.begin(); it != instances.end(); ++it) {
         auto feature = std::get<Feature>(*it);
         auto id = std::get<Id>(*it);
@@ -176,7 +176,7 @@ void JoinBase::_selectPrevalentColocations(const ColocationPackage &colocationPa
                 }
             }
 
-            if(cnt * 1.0 / bits.size() < _minPre) {
+            if(cnt * 1.0 / bits.size() < _minPI) {
                 isPrevalent = false;
                 break;
             }
