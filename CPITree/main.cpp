@@ -7,6 +7,8 @@
 #include "Types.h"
 #include <chrono>
 
+#include "CSVReader/CSVReader.h"
+
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
 
@@ -27,23 +29,16 @@ int main(int argc, char **argv) {
     maxDistance = stod(argv[1]);
     string inputPath(argv[2]);
 
-    ifstream ifs(inputPath, ios::in);
+    CSVReader csvReader(inputPath);
 
     std::vector<InstanceType> instances;
 
-    std::string line;
-    while(getline(ifs, line)) {
-        for(int i = 0; i < line.size(); ++i) {
-            if(line[i] == ',') {
-                line[i] = ' ';
-            }
-        }
+    while(csvReader.hasNext()) {
+        auto line = csvReader.getNextRecord();
 
-        stringstream ss(line);
-        unsigned char feature;
-        unsigned int id;
-        double x, y;
-        ss >> feature >> id >> x >> y;
+        unsigned char feature = line[0][0];
+        unsigned int id = stoul(line[1]);
+        double x = stod(line[2]), y = stod(line[3]);
 
         instances.push_back({feature, id, make_pair(x, y)});
 

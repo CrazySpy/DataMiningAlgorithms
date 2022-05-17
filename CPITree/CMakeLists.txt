@@ -3,4 +3,4 @@ project(CPITree)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(CPITree main.cpp CPITree.cpp CPITree.h Types.h CPITreeNode.cpp CPITreeNode.h)
+add_executable(CPITree main.cpp CPITree.cpp CPITree.h Types.h CPITreeNode.cpp CPITreeNode.h CSVReader/CSVReader.h CSVReader/CSVReader.cpp)
